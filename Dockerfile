@@ -1,19 +1,19 @@
-FROM ubuntu:14.04
+FROM ubuntu:16.04
 
 RUN apt-get update
 RUN apt-get -y install make cmake gcc g++
 
-# liblinearのインストール
-RUN wget 'http://www.csie.ntu.edu.tw/~cjlin/cgi-bin/liblinear.cgi?+http://www.csie.ntu.edu.tw/~cjlin/liblinear+tar.gz' -O liblinear.tar.gz && tar xzvf liblinear.tar.gz
-RUN cd liblinear-2.01 && make
+# livlinear周りのインストール
+RUN apt-get -y install liblinear-dev liblinear-tools liblinear3
+# livsvm周りのインストール
+RUN apt-get install -y libsvm-dev libsvm-tools libsvm3
+
 
 # プロジェクト追加
-ENV APP_DIR  /home/libliner_sample
+ENV APP_DIR  /home/svm_sample
 RUN mkdir -p $APP_DIR
 ADD . $APP_DIR
 WORKDIR $APP_DIR
 
-# 環境変数の追加
-#ENV LINEARINC /usr/include/libliner
-#ENV LINEARLIB /usr/lib
-#RUN make
+# サンプルプログラムのビルド
+RUN make

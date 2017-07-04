@@ -1,23 +1,25 @@
 /*
-*name        :liblinear_sample.c
+*name        :libsvm_sample.c
 *auter       :Seiichirou Nomura
-*discription :s-linear Learning
-*date        :20161208-20170428
+*discription :svm Learning
+*date        :20161208-20170110
 */
 #include<iostream>
 #include<fstream>
 #include<string>
+#include<cstring>
 #include<stdlib.h>
 #include<sstream> //文字ストリーム
 
-#include"linear.h"
+
+#include"svm.h"
 
 using namespace std;
 
 void count_row_col( const char* , int*, int*);
 struct TRAIN_DATA *load_to_train( const char* );
-model *libsvm_data_make( const struct TRAIN_DATA* );
-int libsvm_predict( const struct TRAIN_DATA*, const model* );
+svm_model *libsvm_data_make( const struct TRAIN_DATA* );
+int libsvm_predict( const struct TRAIN_DATA*, const svm_model* );
 
 //学習データ保存用の構造体
 typedef struct TRAIN_DATA{
@@ -103,73 +105,69 @@ struct TRAIN_DATA *load_to_train( const char *train_filename ){
 /*
 *特徴量から学習データの作成
 */
-model *libsvm_data_make( const struct TRAIN_DATA *t_data ){
-  problem prob;
-  feature_node* prob_vec;
+svm_model *libsvm_data_make( const struct TRAIN_DATA *t_data ){
+  svm_problem prob;
+  svm_node* prob_vec;
 
   //素性データ数
-  int train_num = t_data[ 0 ].train_num;
-  int data_num = t_data[ 0 ].data_num;
+  int train_num = t_data[0].train_num;
+  int data_num = t_data[0].data_num;
 
   cout << "learning datas :" << train_num << endl;
 
-  // 各学習データに加えるバイアス次元の値
-  prob.bias = -1;
   //学習データの数
   prob.l = train_num;
-  // 学習ベクトルの次元
-  prob.n = data_num + (prob.bias >= 0);
   //学習データの数だけラベルを用意
-  prob.x = new feature_node * [ prob.l ];
+  prob.x = new svm_node *[ prob.l ];
   //各学習データのラベル
   prob.y = new double[ prob.l ];
-  prob_vec = new feature_node[  prob.l *  ( prob.n + 1)  ];// 学習データの枚数 * 素性データ数　+ 特徴点のクトルの終端コード)
+  prob_vec = new svm_node[  prob.l *  ( data_num + 1)  ];// 学習データの枚数 * 素性データ数　+ 特徴点のクトルの終端コード)
   for( int i = 0 ; i < prob.l; i++){
     //ラベルをふる
     prob.y[ i ] = t_data[i].label;
-    prob.x[ i ] = prob_vec + i * ( prob.n + 1);
+    prob.x[ i ] = prob_vec + i * ( data_num + 1);
 
     //データの数だけ繰り返す
     for( int j = 0; j < data_num; j++){
       prob.x[ i ][ j ].index = j;
       prob.x[ i ][ j ].value = t_data[ i ].data[ j ];
-      std::cout << t_data[ i ].data[ j ] << std::endl;
     }
-    if ( prob.bias >= 0 )
-    {
-      // bias成分
-      prob.x[i][data_num].index = data_num;
-      prob.x[i][data_num].value = prob.bias;
-      prob.x[i][data_num + 1].index = -1;
-    }
-    else
-    {
-      prob.x[ i ][ data_num ].index = -1;
-    }
+    //末尾は-1
+    prob.x[ i ][ data_num ].index = -1;
   }
 
   // 学習する識別器のパラメータ
-  parameter param;
-  param.solver_type = L2R_L2LOSS_SVC_DUAL;// SVCとかSVRとか
-  param.C = 0.1;// SVMにおけるコスト：大きいほどハードマージン
+  svm_parameter param;
+  param.svm_type =  C_SVC;// SVCとかSVRとか
+  param.kernel_type = LINEAR;// RBF（放射基底関数）カーネルとかLINEAR（線形）カーネルとかPOLY（多項式）カーネルとか
+  param.C = 8096;// SVMにおけるコスト：大きいほどハードマージン
+  param.gamma = 0.1;// カーネルとかで使われるパラメータ
+
+  // その他
+  param.coef0 = 0;
+  param.cache_size = 100;
+  param.eps = 1e-3;
+  param.shrinking = 1;
+  param.probability = 0;
 
   // その他状況（svm_typeやカーネル）に応じて必要なもの
+  param.degree = 3;
+  param.nu = 0.5;
   param.p = 0.1;
-  param.eps = 1e-5;
   param.nr_weight = 0;
   param.weight_label = nullptr;
   param.weight = nullptr;
 
-
   //学習する
   cout << "Ready to train ..." << endl;
-  model* model = train( &prob, &param );
+  svm_model* model = svm_train( &prob, &param );
   cout << "Finished ..." << endl;
 
   //後始末
   delete[] prob.y;
   delete[] prob.x;
   delete[] prob_vec;
+  svm_destroy_param(&param);
 
   return model;
 }
@@ -177,9 +175,9 @@ model *libsvm_data_make( const struct TRAIN_DATA *t_data ){
 /*
 *libsvmによる検定
 */
-int libsvm_predict( const struct TRAIN_DATA *t_data , const model *model ){
+int libsvm_predict( const struct TRAIN_DATA *t_data , const svm_model *model ){
   int data_num = t_data->data_num;
-  feature_node test[ data_num ];
+  svm_node test[ data_num ];
 
   cout << "predict training samples ..." << endl;
 
@@ -190,7 +188,7 @@ int libsvm_predict( const struct TRAIN_DATA *t_data , const model *model ){
   test[data_num].index = -1;
 
   // libsvmによるpredict
-  const auto result = static_cast<int>( predict( model, test ) );
+  const auto result = static_cast<int>( svm_predict( model, test ) );
 
   return result;
 }
@@ -211,9 +209,9 @@ int main(int argc, char* argv[])
   t_data = load_to_train( train_filename );
 
   //学習データの作成
-  model* model = libsvm_data_make( t_data );
+  svm_model* model = libsvm_data_make( t_data );
   // 学習結果のファイル出力
-  save_model( svm_filename , model );
+  svm_save_model( svm_filename , model );
 
   //テスト用データの作成
   struct TRAIN_DATA* test;
@@ -221,7 +219,7 @@ int main(int argc, char* argv[])
   test->data = (double*)malloc( sizeof(double) * 10);
   test->data_num = 10;
   for(int j = 0; j < 10 ; j++){
-    test->data[j] = 0.5;
+    test->data[j] = 0.4;
   }
 
   //予測
@@ -232,7 +230,7 @@ int main(int argc, char* argv[])
   // 後始末
   free(t_data);
   free(test);
-  free_and_destroy_model( &model );
+  svm_free_and_destroy_model( &model );
 
   return 0;
 }
