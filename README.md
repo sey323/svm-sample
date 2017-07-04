@@ -1,9 +1,11 @@
 ## ローカルでコンパイル
 ###コンパイルオプション
-libsvm  
+libsvm
+
 `g++ -g -Wall -std=c++0x -I{lib-svmのフォルダパス}/include -L{lib-svmのフォルダパス}/lib libsvm_sample.cpp -lsvm`
 
 liblinear
+
 `g++ -g -Wall -std=c++0x -I{lib-linearのフォルダパス}/include -L{lib-linearのフォルダパス}/lib libsvm_sample.cpp -llinear`
 
 
