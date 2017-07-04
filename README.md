@@ -1,5 +1,6 @@
 ## ローカルでコンパイル
 ###コンパイルオプション
+
 libsvm
 
 `g++ -g -Wall -std=c++0x -I{lib-svmのフォルダパス}/include -L{lib-svmのフォルダパス}/lib libsvm_sample.cpp -lsvm`
