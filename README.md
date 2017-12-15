@@ -1,5 +1,5 @@
 ## ローカルでコンパイル
-###コンパイルオプション
+### コンパイルオプション
 
 libsvm
 
@@ -12,7 +12,10 @@ liblinear
 
 ## Docker
 ### Dockerのビルド
-`docker build -t svm:0.1 .`
-
+~~~
+docker build -t svm:0.1 .
+~~~
 ### Dockerの実行
-`docker run -it --rm svm:0.1 /bin/bash`
+~~~
+docker run --rm -v `pwd`:/home/svm_sample -it svm:0.1 /bin/bash
+~~~
